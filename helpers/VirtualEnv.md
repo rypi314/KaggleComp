@@ -3,7 +3,7 @@
 ### Initial Setup
 
 ```
-python -m venv env
+python -m venv virEnv
 ```
 
 Creates a new virtual environment named *env*.
@@ -11,5 +11,5 @@ Creates a new virtual environment named *env*.
 ### Activate Environment
 
 ```
-env\Scripts\activate.bat
+virEnv\Scripts\activate.bat
 ```
