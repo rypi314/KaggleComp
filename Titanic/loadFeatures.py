@@ -19,7 +19,7 @@ def loadTitanic(fileString):
     dfOneHot = dfOneHot.join(oneHotCabin)
     dfOneHot = dfOneHot.join(oneHotEmbarked)
 
-    X = dfOneHot[['Pclass','Sex_female', 'Embarked_C', 'Embarked_S', 'Embarked_S']]
+    X = dfOneHot[['Pclass','Sex_female', 'Embarked_C', 'Embarked_S', 'Embarked_S', 'Fare']]
     X.to_csv('Featured_'+fileString)
     
     try:
