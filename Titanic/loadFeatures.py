@@ -15,15 +15,18 @@ def loadTitanic(fileString):
     oneHotCabin = pd.get_dummies(dfSource.Cabin, prefix='Cabin')
     oneHotEmbarked = pd.get_dummies(dfSource.Embarked, prefix='Embarked')
 
-    dfOneHot = dfSource.join(oneHotSex)
-    dfOneHot = dfOneHot.join(oneHotCabin)
-    dfOneHot = dfOneHot.join(oneHotEmbarked)
+    dfSource['Age'].fillna(dfSource['Age'].mode()[0], inplace=True)
+    
+    dfFeature = dfSource.join(oneHotSex)
+    dfFeature = dfFeature.join(oneHotCabin)
+    dfFeature = dfFeature.join(oneHotEmbarked)
 
-    X = dfOneHot[['Pclass','Sex_female', 'Embarked_C', 'Embarked_S', 'Embarked_S', 'Fare']]
+
+    X = dfFeature[['Pclass','Sex_female', 'Embarked_C', 'Embarked_S', 'Embarked_S', 'Age']]
     X.to_csv('Featured_'+fileString)
     
     try:
-        y = dfOneHot['Survived']
+        y = dfFeature['Survived']
         y.to_csv('Label_'+fileString)
     except:
         print('Test datset. Missing Label data.')
