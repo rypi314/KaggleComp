@@ -10,14 +10,14 @@ def loadTitanic(fileString):
 
     dfSource['Age'].fillna(dfSource['Age'].mode()[0], inplace=True)
 
-    dfSource['CabinClass'] = dfSource.Cabin.str[0].isin(['A', 'B', 'C'])
+    dfSource['TopDeck'] = dfSource.Cabin.str[0].isin(['A', 'B', 'C', 'D'])
     
     dfFeature = dfSource.join(oneHotSex)
     dfFeature = dfFeature.join(oneHotCabin)
     dfFeature = dfFeature.join(oneHotEmbarked)
 
 
-    X = dfFeature[['Pclass','Sex_female','CabinClass', 'SibSp', 'Parch']]
+    X = dfFeature[['Pclass','Sex_female','TopDeck', 'SibSp']]
     X.to_csv('Featured_'+fileString)
     
     try:
