@@ -1,12 +1,5 @@
 # process.py
 
-from pandas import concat
-
-
-def hello(test):
-    print('hellos: ', test)
-
-
 def loadTitanic(fileString):
     import pandas as pd
     dfSource = pd.read_csv(fileString)
@@ -16,13 +9,15 @@ def loadTitanic(fileString):
     oneHotEmbarked = pd.get_dummies(dfSource.Embarked, prefix='Embarked')
 
     dfSource['Age'].fillna(dfSource['Age'].mode()[0], inplace=True)
+
+    dfSource['CabinClass'] = dfSource.Cabin.str[0].isin(['A', 'B', 'C'])
     
     dfFeature = dfSource.join(oneHotSex)
     dfFeature = dfFeature.join(oneHotCabin)
     dfFeature = dfFeature.join(oneHotEmbarked)
 
 
-    X = dfFeature[['Pclass','Sex_female', 'Embarked_C', 'Embarked_S', 'Embarked_S', 'Age']]
+    X = dfFeature[['Pclass','Sex_female','CabinClass', 'SibSp', 'Parch']]
     X.to_csv('Featured_'+fileString)
     
     try:
