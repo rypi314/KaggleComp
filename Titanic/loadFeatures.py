@@ -1,15 +1,5 @@
 # process.py
 
-def maleChild(row):
-    if row['Age'] < 10 and row['Sex'] == 'male':
-        return 1
-    return 0
-
-def notAlone(row):
-    if row['SibSp'] > 0 or row['Parch'] > 0:
-        return 1
-    return 0
-
 def loadTitanic(fileString):
     import pandas as pd
     dfSource = pd.read_csv(fileString)
@@ -20,7 +10,7 @@ def loadTitanic(fileString):
 
     dfSource['Age'].fillna(dfSource['Age'].mode()[0], inplace=True)
 
-    dfSource['NotAlone'] = dfSource.apply(lambda row: notAlone(row), axis=1)
+    dfSource['Fare'].fillna(dfSource['Fare'].mode()[0], inplace=True)
 
     dfSource['Family'] = dfSource['SibSp'] + dfSource['Parch']
 
@@ -57,7 +47,7 @@ def loadTitanic(fileString):
     dfFeature = dfFeature.join(oneHotEmbarked)
 
 
-    X = dfFeature[['Pclass', 'Age', 'Sex_female', 'Deck', 'Title']]
+    X = dfFeature[['Pclass', 'Age', 'Sex_female', 'Deck', 'Title', 'Fare']]
     X.to_csv('Featured_'+fileString)
     
     try:
