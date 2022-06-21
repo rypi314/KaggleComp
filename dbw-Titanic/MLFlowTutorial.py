@@ -93,22 +93,7 @@ if __name__ == "__main__":
 
 # COMMAND ----------
 
-import os
-import requests
-import numpy as np
-import pandas as pd
-
-def create_tf_serving_json(data):
-  return {'inputs': {name: data[name].tolist() for name in data.keys()} if isinstance(data, dict) else data.tolist()}
-
-def score_model(dataset):
-  url = 'https://adb-8582279356896427.7.azuredatabricks.net/model/ElasticnetWineModel/1/invocations'
-  headers = {'Authorization': f'Bearer {os.environ.get("DATABRICKS_TOKEN")}'}
-  data_json = dataset.to_dict(orient='split') if isinstance(dataset, pd.DataFrame) else create_tf_serving_json(dataset)
-  response = requests.request(method='POST', headers=headers, url=url, json=data_json)
-  if response.status_code != 200:
-    raise Exception(f'Request failed with status {response.status_code}, {response.text}')
-  return response.json()
+test_x.to_csv('/dbfs/FileStore/Sample.csv')
 
 # COMMAND ----------
 
@@ -120,8 +105,221 @@ train_x.describe()
 
 # COMMAND ----------
 
-create_tf_serving_json(test_x)
+# load input data table as a Spark DataFrame
+input_data = spark.table(df)
+model_udf = mlflow.pyfunc.spark_udf(model_path)
+df = input_data.withColumn("prediction", model_udf())
 
 # COMMAND ----------
 
-score_model(test_x)
+# MAGIC %md
+# MAGIC 
+# MAGIC ### JSON Example
+# MAGIC 
+# MAGIC [
+# MAGIC {
+# MAGIC "fixed acidity": 5.5,
+# MAGIC "volatile acidity": 0.78,
+# MAGIC "citric acid": 0.01,
+# MAGIC "residual sugar": 2.2,
+# MAGIC "chlorides": 0.045,
+# MAGIC "free sulfur dioxide": 45.0,
+# MAGIC "total sulfur dioxide": 32.0,
+# MAGIC "density": 0.99257,
+# MAGIC "pH": 0.54,
+# MAGIC "sulphates": 0.58,
+# MAGIC "alcohol": 12.6
+# MAGIC }
+# MAGIC ]
+
+# COMMAND ----------
+
+import numpy as np
+import pandas as pd
+import requests
+
+MODEL_VERSION_URI ='https://adb-8582279356896427.7.azuredatabricks.net/model/ElasticnetWineModel/Production/invocations'
+DATABRICKS_API_TOKEN = 'dapidcc67a51fa75f150663f69f47cf7c8ce-2'
+
+def create_tf_serving_json(data):
+  return {'inputs': {name: data[name].tolist() for name in data.keys()} if isinstance(data, dict) else data.tolist()}
+
+def score_model(model_uri, databricks_token, data):
+  headers = {
+    "Authorization": f"Bearer {databricks_token}",
+    "Content-Type": "application/json",
+  }
+  data_json = data.to_dict(orient='records') if isinstance(data, pd.DataFrame) else create_tf_serving_json(data)
+  response = requests.request(method='POST', headers=headers, url=model_uri, json=data_json)
+  if response.status_code != 200:
+      raise Exception(f"Request failed with status {response.status_code}, {response.text}")
+  return response.json()
+
+# Scoring a model that accepts pandas DataFrames
+data =  pd.DataFrame([{
+"fixed acidity": 5.5,
+"volatile acidity": 0.78,
+"citric acid": 0.01,
+"residual sugar": 2.2,
+"chlorides": 0.045,
+"free sulfur dioxide": 45.0,
+"total sulfur dioxide": 32.0,
+"density": 0.99257,
+"pH": 0.54,
+"sulphates": 0.58,
+"alcohol": 12.6
+}])
+
+# Score the data
+score_model(MODEL_VERSION_URI, DATABRICKS_API_TOKEN, data)
+
+# COMMAND ----------
+
+import numpy as np
+import pandas as pd
+import requests
+
+MODEL_VERSION_URI ='https://adb-8582279356896427.7.azuredatabricks.net/model/ElasticnetWineModel/Production/invocations'
+DATABRICKS_API_TOKEN = 'dapidcc67a51fa75f150663f69f47cf7c8ce-2'
+
+def create_tf_serving_json(data):
+  return {'inputs': {name: data[name].tolist() for name in data.keys()} if isinstance(data, dict) else data.tolist()}
+
+def score_model(model_uri, databricks_token, data):
+  headers = {
+    "Authorization": f"Bearer {databricks_token}",
+    "Content-Type": "application/json",
+  }
+  data_json = data.to_dict(orient='records') if isinstance(data, pd.DataFrame) else create_tf_serving_json(data)
+  response = requests.request(method='POST', headers=headers, url=model_uri, json=data_json)
+  if response.status_code != 200:
+      raise Exception(f"Request failed with status {response.status_code}, {response.text}")
+  return response.json()
+
+# Scoring a model that accepts pandas DataFrames
+data =  df.to_json()
+
+# Score the data
+score_model(MODEL_VERSION_URI, DATABRICKS_API_TOKEN, data)
+
+# COMMAND ----------
+
+from mlflow import spark
+modelSpark = mlflow.spark.load_model("https://adb-8582279356896427.7.azuredatabricks.net/model/ElasticnetWineModel/Production/invocations")
+# Prepare test documents, which are unlabeled (id, text) tuples.
+#test = spark.createDataFrame([
+#    (4, "spark i j k"),
+#    (5, "l m n"),
+#    (6, "spark hadoop spark"),
+#    (7, "apache hadoop")], ["id", "text"])
+# Make predictions on test documents
+prediction = model.transform(test)
+
+# COMMAND ----------
+
+import mlflow
+
+# COMMAND ----------
+
+model_path = 'models:/ElasticnetWineModel/3'
+
+# COMMAND ----------
+
+display(df)
+
+# COMMAND ----------
+
+df.show()
+
+# COMMAND ----------
+
+model = mlflow.pyfunc.load_model(model_path)
+model.predict(df)
+
+# COMMAND ----------
+
+model
+
+# COMMAND ----------
+
+from mlflow import spark
+
+with mlflow.start_run() as active_run:
+  model.predict(df)
+
+
+# COMMAND ----------
+
+#from mlflow import spark
+#model = mlflow.spark.load_model("spark-model")
+# Prepare test documents, which are unlabeled (id, text) tuples.
+test = spark.createDataFrame([
+    (4, "spark i j k"),
+    (5, "l m n"),
+    (6, "spark hadoop spark"),
+    (7, "apache hadoop")], ["id", "text"])
+# Make predictions on test documents
+prediction = model.transform(test)
+
+# COMMAND ----------
+
+# load input data table as a Spark DataFrame
+input_data = spark.table(df)
+model_udf = mlflow.pyfunc.spark_udf(model_path)
+df1 = input_data.withColumn("prediction", model_udf())
+
+# COMMAND ----------
+
+dfp = pd.DataFrame(df)
+
+# COMMAND ----------
+
+model = mlflow.pyfunc.load_model(model_path)
+model.predict(df)
+
+# COMMAND ----------
+
+# File location and type
+file_location = "/FileStore/Sample.csv"
+file_type = "csv"
+
+# CSV options
+infer_schema = "false"
+first_row_is_header = "true"
+delimiter = ","
+
+# The applied options are for CSV files. For other file types, these will be ignored.
+df = spark.read.format(file_type) \
+  .option("inferSchema", infer_schema) \
+  .option("header", first_row_is_header) \
+  .option("sep", delimiter) \
+  .load(file_location)
+
+display(df)
+
+# COMMAND ----------
+
+import mlflow
+
+# COMMAND ----------
+
+# load input data table as a Spark DataFrame
+#input_data = spark.table(df)
+predict = mlflow.pyfunc.spark_udf(spark, model_path)
+#df1 = input_data.withColumn("prediction", model_udf())
+df1 = df.withColumn("prediction", predict(struct("fixed acidity"
+                                                 ,"volatile acidity"
+                                                 ,"citric acid"
+                                                 ,"residual sugar"
+                                                 ,"chlorides"
+                                                 ,"free sulfur dioxide"
+                                                 ,"total sulfur dioxide"
+                                                 ,"density"
+                                                 ,"pH"
+                                                 ,"sulphates"
+                                                 ,"alcohol"
+                                                 )))
+
+# COMMAND ----------
+
+df1.show()
