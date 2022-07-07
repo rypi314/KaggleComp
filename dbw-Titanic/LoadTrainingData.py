@@ -15,7 +15,7 @@ file_type = "csv"
 
 # CSV options
 infer_schema = "false"
-first_row_is_header = "false"
+first_row_is_header = "true"
 delimiter = ","
 
 # The applied options are for CSV files. For other file types, these will be ignored.
