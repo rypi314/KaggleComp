@@ -49,6 +49,8 @@ df.createOrReplaceTempView(temp_table_name)
 # Once saved, this table will persist across cluster restarts as well as allow various users across different notebooks to query this data.
 # To do so, choose your table name and uncomment the bottom line.
 
-permanent_table_name = "train_csv"
+titanic_train = "train_csv"
 
-# df.write.format("parquet").saveAsTable(permanent_table_name)
+permanent_table_name = "titanic_train"
+
+df.write.format("parquet").saveAsTable(permanent_table_name)
